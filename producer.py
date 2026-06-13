@@ -6,7 +6,13 @@ import requests
 
 # 1. Configuration Target
 # For now, point this locally. Later we'll change this to the live Cloudflare URL
-GATEWAY_URL = "https://localhost:8787"
+# GATEWAY_URL = "https://localhost:8787"
+
+# Wrangler hosting the local server
+# GATEWAY_URL = "http://127.0.0.1:8787"
+
+# Brand new live public cloud URL
+GATEWAY_URL = "https://clickstream-gateway.jackieau-data.workers.dev"
 
 # 2. Mock Data Pools (Lists)
 # These represent catagorical variables you'd track from real website users.

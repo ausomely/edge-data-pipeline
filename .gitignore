@@ -17,3 +17,6 @@ __pycache__/
 # Windows system junk
 Thumbs.db
 Desktop.ini
+
+# Unwanted folders
+node_modules/
