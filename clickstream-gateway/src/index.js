@@ -37,7 +37,10 @@ export default {
       const month = String(now.getUTCMonth() + 1).padStart(2, '0');
       const day = String(now.getUTCDate()).padStart(2, '0');
       
-      const fileName = `year=${year}/month=${month}/day=${day}/event-${eventData.event_id}.json`;
+      // const fileName = `year=${year}/month=${month}/day=${day}/event-${eventData.event_id}.json`;
+
+      const uniqueId = crypto.randomUUID(); // Built into Cloudflare Workers
+      const fileName = `year=${year}/month=${month}/day=${day}/batch-${uniqueId}.json`;
 
       // 5. Stream the payload directly into your R2 Bucket using our environmental binding
       await env.DATA_BUCKET.put(fileName, JSON.stringify(eventData), {
