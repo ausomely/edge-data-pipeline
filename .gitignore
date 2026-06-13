@@ -1,0 +1,19 @@
+# Python virtual environments
+.venv/
+venv/
+ENV/
+
+# Local environment variables containing secret keys
+.env
+
+# Python cache and compiled files
+__pycache__/
+*.pyc
+
+# Data files we don't want bloating our repository
+*.csv
+*.json
+
+# Windows system junk
+Thumbs.db
+Desktop.ini
