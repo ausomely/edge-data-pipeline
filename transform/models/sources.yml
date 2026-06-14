@@ -1,0 +1,11 @@
+version: 2
+
+sources:
+  - name: cloudflare_r2
+    description: "Raw clickstream event data bundles streaming into Cloudflare R2 bucket"
+    loader: python_producer
+    tables:
+      - name: raw_events
+        description: "The raw JSON batch files organized by hive-style date partitions"
+        # FIX: Forcing an absolute URL pattern breaks DuckDB out of local folder fallback loops
+        external_location: "https://analytics-lakehouse.s3.amazonaws.com/year=*/*/*/*.json"
