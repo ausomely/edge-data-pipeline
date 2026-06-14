@@ -57,7 +57,7 @@ jobs:
                 settings:
                   s3_access_key_id: '${{ secrets.R2_ACCESS_KEY }}'
                   s3_secret_access_key: '${{ secrets.R2_SECRET_KEY }}'
-                  s3_endpoint: 'https://${{ secrets.R2_ENDPOINT }}'
+                  s3_endpoint: '${{ secrets.R2_ENDPOINT }}'
                   s3_url_style: 'path'
           " > profiles.yml
           
