@@ -39,7 +39,15 @@ jobs:
           CLOUDFLARE_R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
         run: |
           python producer.py
-
+      # Step 4.5: Network Diagnostics Check
+      - name: Network Connectivity Test
+        run: |
+          echo "=== Testing Internet Access ==="
+          curl -I https://www.google.com
+          
+          echo "=== Testing Cloudflare Connection ==="
+          # This will test if the runner can actually resolve your endpoint domain
+          curl -I https://${{ secrets.R2_ENDPOINT }}
       # Step 5: Run the core dbt transformations
       - name: Execute dbt Medallion Pipeline
         env:
