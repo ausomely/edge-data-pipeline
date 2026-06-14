@@ -2,7 +2,7 @@
 
 WITH unique_pages AS (
     SELECT DISTINCT
-        LOWER(primary_category) AS primary_category
+        primary_category  -- Already guaranteed to be lowercase from Silver!
     FROM {{ ref('fct_pageviews') }}
     WHERE primary_category IS NOT NULL
 )

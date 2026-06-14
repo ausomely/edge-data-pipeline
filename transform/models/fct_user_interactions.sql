@@ -15,7 +15,7 @@ WITH silver_events AS (
 SELECT
     MD5(event_id) AS interaction_key,                    -- Unique identifier for this specific row
     MD5(user_id) AS user_key,                             -- Lego brick connecting to dim_users
-    MD5(LOWER(primary_category)) AS page_key,             -- Lego brick connecting to dim_pages (lowercased!)
+    MD5(primary_category) AS page_key,             -- Lego brick connecting to dim_pages (lowercased!)
     event_timestamp,
     CAST(event_timestamp AS DATE) AS interaction_date,         -- Pre-calculated date grain for easy filtering
     is_high_engagement
