@@ -2,46 +2,39 @@ name: Data Lakehouse Orchestration
 
 on:
   schedule:
-    # Runs automatically every day at midnight UTC (Adjust as needed)
     - cron: '0 0 * * *'
   push:
     branches:
       - main
-  workflow_dispatch: # Allows you to manually trigger the job via the GitHub UI
+  workflow_dispatch:
 
 jobs:
   run-pipeline:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Check out the repository code onto the runner
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      # Step 2: Set up Python environment
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-with-version: '3.13.2'
-          cache: 'pip' # Speeds up subsequent runs by caching dependencies
+          python-version: '3.13.2'
+          cache: 'pip'
 
-      # Step 3: Install all dependencies (Python tools + dbt)
       - name: Install Dependencies
         run: |
           pip install -r requirements.txt
           pip install dbt-duckdb
 
-      # Step 4: Run the ingestion script to drop batch files into Cloudflare R2
       - name: Ingest Micro-Batch Data
         env:
-          # Assuming your ingestion script uses these variables to connect to R2
           R2_ACCESS_KEY: ${{ secrets.R2_ACCESS_KEY }}
           R2_SECRET_KEY: ${{ secrets.R2_SECRET_KEY }}
           R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
         run: |
           python producer.py
 
-      # Step 5: Generate profile and execute dbt Medallion Pipeline
       - name: Execute dbt Medallion Pipeline
         env:
           DBT_R2_ACCESS_KEY: ${{ secrets.R2_ACCESS_KEY }}
@@ -50,7 +43,6 @@ jobs:
         run: |
           cd transform
           
-          # Dynamically build a clean profiles.yml injecting OS environment variables
           echo "
           transform:
             target: dev
@@ -63,16 +55,11 @@ jobs:
                 settings:
                   s3_access_key_id: \"{{ env_var('DBT_R2_ACCESS_KEY') }}\"
                   s3_secret_access_key: \"{{ env_var('DBT_R2_SECRET_KEY') }}\"
-                  s3_endpoint: \"https://{{ env_var('DBT_R2_ENDPOINT') }}\"
+                  s3_endpoint: \"{{ env_var('DBT_R2_ENDPOINT') }}\"
                   s3_url_style: 'path'
                   s3_region: 'auto'
           " > profiles.yml
           
-          # Install any dbt packages if you add them later (like dbt_utils)
           dbt deps
-          
-          # Run the full suite of transformations
           dbt run --target dev
-          
-          # Optional: Run schema/data tests to ensure data quality
           dbt test --target dev
