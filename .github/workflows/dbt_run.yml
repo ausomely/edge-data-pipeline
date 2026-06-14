@@ -42,6 +42,10 @@ jobs:
 
       # Step 5: Run the core dbt transformations
       - name: Execute dbt Medallion Pipeline
+        env:
+          DBT_R2_ACCESS_KEY: ${{ secrets.R2_ACCESS_KEY }}
+          DBT_R2_SECRET_KEY: ${{ secrets.R2_SECRET_KEY }}
+          DBT_R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
         run: |
           cd transform
           
@@ -55,9 +59,9 @@ jobs:
                 extensions:
                   - httpfs
                 settings:
-                  s3_access_key_id: '${{ secrets.R2_ACCESS_KEY }}'
-                  s3_secret_access_key: '${{ secrets.R2_SECRET_KEY }}'
-                  s3_endpoint: '${{ secrets.R2_ENDPOINT }}'
+                  s3_access_key_id: \"{{ env_var('DBT_R2_ACCESS_KEY') }}\"
+                  s3_secret_access_key: \"{{ env_var('DBT_R2_SECRET_KEY') }}\"
+                  s3_endpoint: \"{{ env_var('DBT_R2_ENDPOINT') }}\"
                   s3_url_style: 'path'
                   s3_region: 'auto'
           " > profiles.yml
