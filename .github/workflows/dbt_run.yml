@@ -59,6 +59,7 @@ jobs:
                   s3_secret_access_key: '${{ secrets.R2_SECRET_KEY }}'
                   s3_endpoint: '${{ secrets.R2_ENDPOINT }}'
                   s3_url_style: 'path'
+                  s3_region: 'auto'
           " > profiles.yml
           
           dbt run --target dev
