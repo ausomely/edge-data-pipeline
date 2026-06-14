@@ -1,0 +1,65 @@
+name: End-to-End Clickstream Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  schedule:
+    # Runs automatically every day at 12:00 AM UTC
+    - cron: '0 0 * * *'
+
+jobs:
+  run-pipeline:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Clone your repository onto the virtual cloud runner
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      # Step 2: Set up a secure Python environment
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      # Step 3: Install project dependencies
+      - name: Install Dependencies
+        run: |
+          pip install --upgrade pip
+          pip install dbt-duckdb
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+      # Step 4: Run the Python Event Streamer to drop fresh data into R2
+      - name: Run Micro-Batch Ingestion Producer
+        env:
+          CLOUDFLARE_R2_ACCESS_KEY: ${{ secrets.R2_ACCESS_KEY }}
+          CLOUDFLARE_R2_SECRET_KEY: ${{ secrets.R2_SECRET_KEY }}
+          CLOUDFLARE_R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+        run: |
+          python producer.py
+
+      # Step 5: Run the core dbt transformations
+      - name: Execute dbt Medallion Pipeline
+        run: |
+          cd transform
+          
+          # 1. Dynamically create a temporary profiles.yml file just for the cloud runner
+          echo "
+          transform:
+            target: dev
+            outputs:
+              dev:
+                type: duckdb
+                path: dev.duckdb
+                extensions:
+                  - httpfs
+                settings:
+                  s3_access_key_id: '${{ secrets.R2_ACCESS_KEY }}'
+                  s3_secret_access_key: '${{ secrets.R2_SECRET_KEY }}'
+                  s3_endpoint: '${{ secrets.R2_ENDPOINT }}'
+          " > profiles.yml
+          
+          # 2. Run dbt using the temporary profile we just built
+          dbt run --target dev
