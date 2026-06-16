@@ -12,19 +12,29 @@ WITH raw_data AS (
             'device': 'VARCHAR',
             'duration_seconds': 'DOUBLE'
         },
-        -- FIX 1: Let DuckDB automatically negotiate between array and newline layouts file-by-file
         format='auto',
-        -- FIX 2: Force DuckDB to automatically unpack array items into distinct rows
         records='auto'
     )
 )
 
 SELECT
     event_id::VARCHAR AS event_id,
-    user_id::VARCHAR AS user_id,
+    
+    -- Fix Issue A: Fallback to 'ANONYMOUS' if user_id is missing/null
+    COALESCE(user_id::VARCHAR, 'ANONYMOUS') AS user_id,
+    
     timestamp::TIMESTAMPTZ AS event_timestamp,
     event_type::VARCHAR AS event_type,
-    page_path::VARCHAR AS page_path,
+    
+    -- Fix Issue B: Force all page paths to lowercase so '/HOME' matches '/home'
+    LOWER(page_path::VARCHAR) AS page_path,
+    
     device::VARCHAR AS device_type,
     duration_seconds::DOUBLE AS duration_seconds
 FROM raw_data
+
+-- Fix Issue C: De-duplicate events by keeping only the earliest instance of an event_id
+QUALIFY ROW_NUMBER() OVER (
+    PARTITION BY event_id 
+    ORDER BY timestamp ASC
+) = 1

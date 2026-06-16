@@ -1,0 +1,28 @@
+version: 2
+
+models:
+  - name: stg_clickstream_events
+    description: "Staging table for raw user clickstream events ingested from Cloudflare R2."
+    columns:
+      - name: event_id
+        description: "The unique identifier for each clickstream event."
+        data_tests:
+          - unique
+          - not_null
+
+      - name: user_id
+        description: "The unique identifier for the user."
+        data_tests:
+          - not_null
+
+      - name: event_timestamp
+        description: "The timestamp when the event occurred, converted to TIMESTAMPTZ."
+        data_tests:
+          - not_null
+
+      - name: device_type
+        description: "The type of device used by the visitor."
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['desktop', 'mobile', 'tablet']
