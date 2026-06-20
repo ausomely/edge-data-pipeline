@@ -9,55 +9,63 @@
  */
 
 export default {
-  async fetch(request, env, ctx) {
-    // 1. Handle CORS requests so your Python script doesn't get blocked
-    if (request.method === "OPTIONS") {
-      return new Response(null, { 
-        status: 204,
-        headers: {
-          "Access-Control-Allow-Origin": "*",
-          "Access-Control-Allow-Methods": "POST, OPTIONS",
-          "Access-Control-Allow-Headers": "Content-Type"
-        }
-      });
-    }
-
-    // 2. Enforce strict POST rules
+  async fetch(request, env) {
+    // 1. Handle CORS/Methods safely
     if (request.method !== "POST") {
-      return new Response("Method Not Allowed.", { status: 405 });
+      return new Response("Method Not Allowed", { status: 405 });
     }
 
     try {
-      // 3. Extract the JSON record streaming in from Python
-      const eventData = await request.json();
+      // Check if the bucket binding actually exists
+      if (!env.DATA_BUCKET) {
+        return new Response(JSON.stringify({ error: "R2 Bucket binding 'DATA_BUCKET' not found." }), { status: 500 });
+      }
+
+      // 2. Extract the incoming payload as an ArrayBuffer
+      const buffer = await request.arrayBuffer();
       
-      // 4. Organize data using hive-style date partitioning (year=/month=/day=)
+      if (!buffer || buffer.byteLength === 0) {
+        return new Response(JSON.stringify({ error: "Empty binary payload" }), { status: 400 });
+      }
+
+      // 💡 THE FIX: Wrap the raw ArrayBuffer into a typed Uint8Array view 
+      // This prevents Cloudflare from misinterpreting raw memory streams.
+      const binaryData = new Uint8Array(buffer);
+
+      // 3. Construct precise path names
       const now = new Date();
-      const year = now.getUTCFullYear();
-      const month = String(now.getUTCMonth() + 1).padStart(2, '0');
-      const day = String(now.getUTCDate()).padStart(2, '0');
+      const dateStr = now.toISOString().split('T')[0]; // YYYY-MM-DD
+      const timestamp = now.toISOString().replace(/[:.]/g, "-");
+      const uniqueId = Math.random().toString(36).substring(2, 8);
       
-      // const fileName = `year=${year}/month=${month}/day=${day}/event-${eventData.event_id}.json`;
+      // Notice the .parquet extension here
+      const objectKey = `raw/clickstream/dt=${dateStr}/${timestamp}_${uniqueId}.parquet`;
 
-      const uniqueId = crypto.randomUUID(); // Built into Cloudflare Workers
-      const fileName = `year=${year}/month=${month}/day=${day}/batch-${uniqueId}.json`;
-
-      // 5. Stream the payload directly into your R2 Bucket using our environmental binding
-      await env.DATA_BUCKET.put(fileName, JSON.stringify(eventData), {
-        headers: { "Content-Type": "application/json" }
-      });
-
-      // 6. Return a successful 200 OK response back to your Python script
-      return new Response(JSON.stringify({ success: true, saved_as: fileName }), {
-        status: 200,
-        headers: { 
-          "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": "*"
+      // 4. Persist directly to Cloudflare R2
+      await env.DATA_BUCKET.put(objectKey, binaryData, {
+        httpMetadata: {
+          contentType: "application/octet-stream",
         }
       });
 
-    } catch (err) {
-      return new Response(`Pipeline Ingestion Error: ${err.message}`, { status: 500 });
+      return new Response(JSON.stringify({ 
+        success: true, 
+        key: objectKey 
+      }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" }
+      });
+
+    } catch (error) {
+      // If it fails, return the EXACT error message to your Python terminal log
+      return new Response(JSON.stringify({ 
+        error: "Internal Error within Worker",
+        details: error.message,
+        stack: error.stack
+      }), { 
+        status: 500,
+        headers: { "Content-Type": "application/json" }
+      });
     }
-  },
+  }
 };

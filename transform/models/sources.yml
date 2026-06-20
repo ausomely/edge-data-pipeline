@@ -6,6 +6,6 @@ sources:
     loader: python_producer
     tables:
       - name: raw_events
-        description: "The raw JSON batch files organized by hive-style date partitions"
-        # FIX: Forcing an absolute URL pattern breaks DuckDB out of local folder fallback loops
-        external_location: "https://analytics-lakehouse.s3.amazonaws.com/year=*/*/*/*.json"
+        description: "The compressed Parquet batch files organized by hive-style date partitions"
+        # 💡 FIX: Shifted from raw JSON to read_parquet, pointing to our new Hive structure
+        external_location: "read_parquet('https://analytics-lakehouse.s3.amazonaws.com/raw/clickstream/dt=*/*.parquet')"
