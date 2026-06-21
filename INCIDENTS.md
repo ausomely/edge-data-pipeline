@@ -28,7 +28,7 @@ Rather than allowing upstream telemetry anomalies to corrupt core analytical lay
 ### Incident #002: Object Storage Hostname Resolution Error (`Could Not Resolve Hostname`)
 * **Status:** Resolved ✅
 * **Severity:** High (Halted cloud dbt compilation and completely blocked network connectivity to the data lake)
-* **Date Discovered:** June 2026
+* **Date Discovered:** June 15 2026
 
 #### 🔍 Root Cause Analysis (RCA)
 When migrating the localized dbt pipeline to orchestrate against remote Cloudflare R2 object storage within the GitHub Actions runner, the pipeline repeatedly crashed during database compilation. The network transport layer failed because the target `s3_endpoint` property was compiled with an invalid double protocol prefix: `https://https://[account_id].r2.cloudflarestorage.com`. 
@@ -44,7 +44,7 @@ The root cause was an architectural mismatch between configuration layers: the e
 ### Incident #003: Cloud Runner Environment Deprecation (Node.js 20 Migration)
 * **Status:** Resolved ✅
 * **Severity:** Low (Log noise and proactive disruption mitigation)
-* **Date Discovered:** June 2026
+* **Date Discovered:** June 15 2026
 
 #### 🔍 Root Cause Analysis (RCA)
 GitHub issued a platform deprecation warning alerting the repository that core marketplace actions (`actions/checkout@v4` and `actions/setup-python@v5`) were executing on an outdated Node.js 20 runtime environment. With the platform scheduling an immediate hard enforcement cutoff migrating runners to a Node.js 24 environment, outdated dependency tags posed a future compilation maintenance risk.
@@ -60,7 +60,7 @@ This completely eliminated runner deprecation log noise and insulated the automa
 ### Incident #004: DuckDB Automated Extension Loading Failure
 * **Status:** Resolved ✅
 * **Severity:** High (Prevented DuckDB database engine from scanning remote cloud object storage files)
-* **Date Discovered:** June 2026
+* **Date Discovered:** June 15 2026
 
 #### 🔍 Root Cause Analysis (RCA)
 During early testing phases, DuckDB threw runtime execution errors when attempting to query remote `s3://` bucket paths. Because DuckDB operates completely in-memory inside a transient, vanilla GitHub Actions Ubuntu virtual container, it lacked the native transport protocols required to read remote, encrypted SSL network file structures over a network interface by default.
@@ -73,7 +73,6 @@ During early testing phases, DuckDB threw runtime execution errors when attempti
     - httpfs
 This forces the ephemeral cloud container database instance to instantly fetch and initialize secure network filesystem capabilities before compiling models, establishing a fluid handshake with Cloudflare R2 storage.
 
----
 
 ## 🔄 The Incident Resolution & Development Runbook
 
@@ -93,3 +92,4 @@ To maintain pipeline stability, all pipeline changes, test failures, or model ad
     git add .
     git commit -m "fix: resolve clickstream duplication and missing user profiles via staging deduplication"
     git push origin main
+```
